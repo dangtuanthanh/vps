@@ -22,14 +22,13 @@
       mkdir -p ~/vps
       cd ~/vps
 
-      # ==================== TẠO MẬT KHẨU NGẪU NHIÊN ====================
-      # Tạo mật khẩu ngẫu nhiên 12 ký tự (chữ + số + ký tự đặc biệt)
+      # ==================== PASS urandom  ====================
       VPS_PASSWORD=$(tr -dc 'A-Za-z0-9!@#$%^&*()_+' < /dev/urandom | head -c 12)
 
-      echo "🔑 Đang tạo mật khẩu VPS ngẫu nhiên..."
+      echo "🔑 ..."
       # ===========================================================
 
-      # Pull and start container với mật khẩu random
+      # Pull and start container
       if ! docker ps -a --format '{{.Names}}' | grep -qx 'ubuntu-novnc'; then
         docker pull thuonghai2711/ubuntu-novnc-pulseaudio:22.04
         docker run --name ubuntu-novnc \
@@ -79,11 +78,10 @@
 
       if [ -n "$URL" ]; then
         echo "========================================="
-        echo " 🌍 Cloudflared tunnel is ready:"
+        echo " 🌍 Cloudflared is ready:"
         echo " $URL"
-        echo " 🔑 Mật khẩu VPS (VNC) của bạn là: $VPS_PASSWORD"
+        echo " 🔑 $VPS_PASSWORD"
         echo "=========================================="
-        echo "💡 Lưu ý: Mật khẩu này được tạo ngẫu nhiên mỗi lần restart workspace"
       else
         echo "❌ Cloudflared tunnel failed, check /tmp/cloudflared.log"
       fi
