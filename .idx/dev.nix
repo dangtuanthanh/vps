@@ -1,6 +1,5 @@
 { pkgs, ... }: {
   channel = "stable-24.11";
-
   packages = [
     pkgs.docker
     pkgs.cloudflared
@@ -9,7 +8,6 @@
     pkgs.gnugrep
     pkgs.sudo
     pkgs.apt
-    pkgs.docker
     pkgs.systemd
     pkgs.unzip
     pkgs.netcat
@@ -20,20 +18,25 @@
   idx.workspace.onStart = {
     novnc = ''
       set -e
-
       # Make sure current directory exists
       mkdir -p ~/vps
       cd ~/vps
 
+      # ==================== TẠO MẬT KHẨU NGẪU NHIÊN ====================
+      # Tạo mật khẩu ngẫu nhiên 12 ký tự (chữ + số + ký tự đặc biệt)
+      VPS_PASSWORD=$(tr -dc 'A-Za-z0-9!@#$%^&*()_+' < /dev/urandom | head -c 12)
 
-      # Pull and start container
+      echo "🔑 Đang tạo mật khẩu VPS ngẫu nhiên..."
+      # ===========================================================
+
+      # Pull and start container với mật khẩu random
       if ! docker ps -a --format '{{.Names}}' | grep -qx 'ubuntu-novnc'; then
         docker pull thuonghai2711/ubuntu-novnc-pulseaudio:22.04
         docker run --name ubuntu-novnc \
           --shm-size 1g -d \
           --cap-add=SYS_ADMIN \
           -p 10000:10000 \
-          -e VNC_PASSWD=12345678 \
+          -e VNC_PASSWD="$VPS_PASSWORD" \
           -e PORT=10000 \
           -e AUDIO_PORT=1699 \
           -e WEBSOCKIFY_PORT=6900 \
@@ -63,10 +66,10 @@
       nohup cloudflared tunnel --no-autoupdate --url http://localhost:10000 \
         > /tmp/cloudflared.log 2>&1 &
 
-      # Wait a bit longer to ensure WebSocket is fully ready
+      # Wait a bit longer
       sleep 10
 
-      # Extract Cloudflared URL reliably
+      # Extract Cloudflared URL
       URL=""
       for i in {1..15}; do
         URL=$(grep -o "https://[a-z0-9.-]*trycloudflare.com" /tmp/cloudflared.log | head -n1)
@@ -76,10 +79,11 @@
 
       if [ -n "$URL" ]; then
         echo "========================================="
-        echo " 🌍 Your Cloudflared tunnel is ready:"
-        echo "   $URL"
-        echo "  Mật khẩu vps của bạn là:12345678"
+        echo " 🌍 Cloudflared tunnel is ready:"
+        echo " $URL"
+        echo " 🔑 Mật khẩu VPS (VNC) của bạn là: $VPS_PASSWORD"
         echo "=========================================="
+        echo "💡 Lưu ý: Mật khẩu này được tạo ngẫu nhiên mỗi lần restart workspace"
       else
         echo "❌ Cloudflared tunnel failed, check /tmp/cloudflared.log"
       fi
